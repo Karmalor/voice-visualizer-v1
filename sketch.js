@@ -12,6 +12,8 @@ function preload() {
   song = loadSound("starling.mp3");
 }
 
+document.addEventListener("touchstart", {});
+
 function setup() {
   var canvas = createCanvas(windowWidth, windowHeight);
   canvas.mousePressed(toggleSound);
