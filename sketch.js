@@ -3,9 +3,10 @@ var bins = 16,
   smoothing = 0.75;
 let mic;
 
-let slider;
-let slider2;
+// let slider;
+// let slider2;
 var yMax;
+var gE;
 
 /* Música de biblioteca de youtube https://www.youtube.com/audiolibrary/music */
 function preload() {
@@ -27,14 +28,14 @@ function setup() {
   background(0);
 
   slider = createSlider(0, 255, 200);
-  slider.position(10, 25);
+  slider.position(25, 25);
   slider.input(repaint);
 
-  button = createButton("Full Screen");
-  button.mouseClicked(fullScreenIt);
-  button.size(100, 30);
-  button.position(225, 25);
-  button.style("font-size", "12px");
+  // button = createButton("Full Screen");
+  // button.mouseClicked(fullScreenIt);
+  // button.size(100, 30);
+  // button.position(225, 25);
+  // button.style("font-size", "12px");
 }
 
 function windowResized() {
@@ -54,17 +55,26 @@ function toggleSound() {
 function draw() {
   background(0);
   stroke(255, 255, 0);
+  strokeWeight(3);
   var spectrum = fft.analyze();
+
+  let volume = mic.getLevel();
+  let threshold = gE;
+
   beginShape();
-  fft.getEnergy("treble");
+  fft.getEnergy("mid");
   var level = strokeWeight(level / 125);
   var invertedSpectrum = spectrum.slice().reverse();
   var values = invertedSpectrum.concat(spectrum);
   for (var i = 0; i < values.length; i++) {
     var x = map(i, 0, values.length, 0, width);
-    var y = map(values[i], 0, 255, 0, height / 4);
+    if (volume > threshold) {
+      var y = map(values[i], 0, 255, 0, height / 3);
+    } else {
+      var y = map(values[i] / 5, 0, 255, 0, height / 3);
+    }
     if (i % 2 == 0) y *= -1;
-    curveVertex(x, y * yMax + height / 2);
+    curveVertex(x, y + height / 2);
   }
   endShape();
 }
@@ -73,12 +83,9 @@ function repaint() {
   if (!slider.value()) {
     g = 1;
   } else {
-    let g = slider.value();
-    let gE = map(g, 0, 255, 0, 1);
-
-    mic.amp(gE);
+    var g = slider.value();
+    gE = map(g, 0, 255, -0.01, 0.3);
   }
-  yMax = 1;
 }
 
 // function fullScreenIt() {
@@ -88,10 +95,10 @@ function repaint() {
 
 // }
 
-function fullScreenIt() {
-  var fs = fullscreen();
-  if (!fs) {
-    fullscreen(true);
+function mousePressed() {
+  if (mouseX > 0 && mouseX < width && mouseY > 100 && mouseY < height) {
+    let fs = fullscreen();
+    fullscreen(!fs);
   }
 }
 
