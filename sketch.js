@@ -1,37 +1,85 @@
-let sound;
-let fft;
+var song, fft, amp;
+var bins = 16,
+  smoothing = 0.75;
+let mic;
 
-// Load sound file before setup() function runs
-function preload(){
-  // Load the sound file saved as "starling.mp3"
-  sound = loadSound('starling.mp3');
+let slider;
+let slider2;
+var yMax;
+
+/* Música de biblioteca de youtube https://www.youtube.com/audiolibrary/music */
+function preload() {
+  song = loadSound("starling.mp3");
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  
-  // Loop sound file
-  sound.loop();
-  // Create a new instance of p5.FFT() object
-  fft = new p5.FFT();
-  
-  noStroke();
+  var canvas = createCanvas(windowWidth, windowHeight);
+  canvas.mousePressed(toggleSound);
+  mic = new p5.AudioIn();
+  mic.start();
+  amp = new p5.Amplitude();
+  fft = new p5.FFT(smoothing, bins);
+  fft.setInput(mic);
+
+  noFill();
+  background(0);
+
+  slider = createSlider(0, 255, 200);
+  slider.position(10, 25);
+  slider.input(repaint);
+
+  button = createButton("Full Screen");
+  button.mouseClicked(fullScreenIt);
+  button.size(100, 30);
+  button.position(225, 25);
+  button.style("font-size", "12px");
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  background(0);
+}
+
+function toggleSound() {
+  if (song.isPlaying()) {
+    song.stop();
+  } else {
+    song.setVolume(0);
+    song.play();
+  }
 }
 
 function draw() {
-  background(0, 30);
-  
-  // waveform() method returns an array of amplitude values (between -1 and 1) that represent a snapshot of amplitude readings in a single buffer
-  let waveform = fft.waveform();
-  
-  // Loop through waveform array to draw a circle per time segment
-  for(let i = 0; i < waveform.length; i++){
-    // Map x location using index number of waveform array
-    let x = map(i, 0, waveform.length, 0, width);
-    // May y location using the amplitude value for the specific time segment
-    let y = map(waveform[i], -1, 1, height, 0);
-    
-    circle(x, y, 3);
+  background(0);
+  stroke(255, 255, 0);
+  var spectrum = fft.analyze();
+  beginShape();
+  fft.getEnergy("treble");
+  var level = strokeWeight(level / 125);
+  var invertedSpectrum = spectrum.slice().reverse();
+  var values = invertedSpectrum.concat(spectrum);
+  for (var i = 0; i < values.length; i++) {
+    var x = map(i, 0, values.length, 0, width);
+    var y = map(values[i], 0, 255, 0, height / 4);
+    if (i % 2 == 0) y *= -1;
+    curveVertex(x, y * yMax + height / 2);
   }
-  
+  endShape();
+}
+
+function repaint() {
+  if (!slider.value()) {
+    g = 1;
+  } else {
+    let g = slider.value();
+    let gE = map(g, 0, 255, 0, 1);
+
+    mic.amp(gE);
+  }
+  yMax = 1;
+}
+
+function fullScreenIt() {
+  let fs = fullscreen();
+  fullscreen(!fs);
 }
